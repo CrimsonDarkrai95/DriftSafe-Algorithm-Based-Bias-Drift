@@ -1,105 +1,185 @@
 # ⚖️ DriftSafe — Algorithmic Bias & Drift Monitoring Dashboard
 
-A post-deployment fairness monitoring system for loan approval ML models. DriftSafe detects when a frozen production model becomes unfair over time due to data drift — without any model changes — using Disparate Impact and Approval Gap metrics across multiple sensitive attributes.
+A post-deployment fairness monitoring system for loan approval ML models. DriftSafe
+detects when a frozen production model becomes unfair over time due to data drift —
+with **no model changes** — using Disparate Impact and Approval Gap across multiple
+sensitive attributes and two geographic regions (India & USA).
 
 ---
 
 ## 🏗️ Architecture
 
 ```
-Indian / US Loan Data → Feature Engineering → Logistic Regression (frozen at T0)
-  → Time-windowed Fairness Evaluation (T0 → T1 → T2 → T3)
-    → Disparate Impact + Approval Gap → Alert System → Flask Dashboard
+India CSV / USA Excel
+       │
+       ▼
+Feature Engineering  ──►  Logistic Regression (trained on T0, FROZEN)
+       │                          │
+       ▼                          ▼
+Time Windows (T0→T3)  ──►  Fairness Monitor
+                                  │
+                    ┌─────────────┼─────────────┐
+                    ▼             ▼             ▼
+             Disparate      Approval      Alert Level
+              Impact          Gap        (OK/WARN/ALERT)
+                    └─────────────┴─────────────┘
+                                  │
+                                  ▼
+                         Flask API ──► HTML Dashboard
+                         (india.html / usa.html)
 ```
 
-**Key design principle:** The model is trained once on the baseline period (T0) and never retrained. Any fairness degradation observed in T1–T3 is caused purely by data drift, not model changes — demonstrating why continuous post-deployment monitoring is necessary.
+**Key design principle:** The model is trained **once** on the baseline period (T0)
+and never retrained. All fairness degradation seen in T1–T3 is caused purely by data
+drift — demonstrating why continuous post-deployment monitoring is essential.
 
 ---
 
 ## ⚙️ Tech Stack
 
-| Component        | Technology                            |
-|------------------|---------------------------------------|
-| Language         | Python 3.11                           |
-| ML Model         | scikit-learn (LogisticRegression)     |
-| Data             | pandas, NumPy                         |
-| Backend API      | Flask                                 |
-| Dashboard        | HTML/CSS/JS (vanilla, no framework)   |
-| Fairness Metrics | Custom (Disparate Impact, Approval Gap) |
-| Dataset (India)  | 4,269 loan applications               |
-| Dataset (USA)    | BLS / synthetic loan data             |
+| Component        | Technology                                  |
+|------------------|---------------------------------------------|
+| Language         | Python 3.11                                 |
+| ML Model         | scikit-learn — LogisticRegression           |
+| Data             | pandas, NumPy, openpyxl                     |
+| Backend API      | Flask                                       |
+| Dashboard        | HTML / CSS / Vanilla JS (no framework)      |
+| Fairness Metrics | Custom implementation (DI, Approval Gap)    |
 
 ---
 
-## 📊 Dataset
+## 📦 Datasets
 
-- **Source:** Indian loan application dataset (`IndianData_final.csv`)
-- **Size:** 4,269 records, 21 features
-- **Date range:** 2018–2024 (sorted chronologically into 4 time windows)
-- **Time windows:** T0 (baseline), T1, T2, T3 — ~1,067 records each
+| Region | File                           | Records | Features | Date Range    | Label          |
+|--------|--------------------------------|---------|----------|---------------|----------------|
+| India  | `IndianData_final.csv`         | 4,269   | 21       | 2018 – 2024   | Proxy rule     |
+| USA    | `Dated_Loan_Approval_Data.xlsx`| 50,000  | 21       | 2015 – 2025   | `loan_status`  |
 
-**Monitored sensitive attributes:**
-- Age Group: Young (18–35) vs Middle (36–65)
-- Income Segment: Low (<₹40K) vs Medium (40–80K)
-- Credit Score Group: Low (300–550) vs Medium (551–700)
-- Product Type: Credit Card vs Personal Loan
+**India proxy label:** credit_score ≥ 650 AND debt_to_income_ratio ≤ 0.40  
+**USA actual label:** `loan_status` column (1 = approved, 0 = rejected)  
+**USA baseline approval rate:** 55.0% | **USA model accuracy on T0:** 82.4%
 
 ---
 
-## 📈 Results
+## 📊 Results
 
-### Quick Test — Threshold Drift (Age Group)
+### Fairness Metric Definitions
 
-Run `python bias_quick_test.py` for an instant reproducible result:
-
-| Metric              | Before Drift | After Drift |
-|---------------------|--------------|-------------|
-| Approval Rate (Young) | 24.9%      | 16.6%       |
-| Approval Rate (Senior)| 25.7%      | 25.7%       |
-| **Disparate Impact**  | **0.9696** ✅ | **0.6464** 🚨 |
-| Approval Gap          | 0.0078     | 0.0910      |
-| 80% Rule Status       | FAIR       | **VIOLATION** |
-
-DI dropped by **−0.3232** after threshold tightening, crossing the 0.80 fairness threshold. Young applicants' approval rate fell from 24.9% → 16.6% while senior applicants were unaffected.
+| Metric | Formula | Threshold | Meaning |
+|--------|---------|-----------|---------|
+| **Disparate Impact (DI)** | P(approval\|protected) / P(approval\|reference) | ≥ 0.80 (80% rule) | Core fairness signal |
+| **Approval Gap** | \|rate_protected − rate_reference\| | < 0.10 | Absolute disparity |
 
 ---
 
-### Time-Series Monitoring — Logistic Regression Model (frozen at T0)
+### 🇮🇳 India — 4,269 Records (~1,067 per window)
 
-#### Age Group (Young vs Middle)
+#### Quick Test (standalone — `python bias_quick_test.py`)
 
-| Period | Young Approval | Middle Approval | DI     | Gap   | Status      |
-|--------|---------------|-----------------|--------|-------|-------------|
-| T0     | 22.3%         | 25.7%           | 0.867  | 0.034 | ⚠️ Baseline  |
-| T1     | 12.1%         | 20.8%           | 0.582  | 0.087 | 🚨 ALERT    |
-| T2     | 16.1%         | 25.0%           | 0.646  | 0.088 | 🚨 ALERT    |
-| T3     | 14.0%         | 24.4%           | 0.575  | 0.104 | 🚨 ALERT    |
+| Metric | Before Drift | After Drift |
+|--------|-------------|-------------|
+| Approval Rate — Young (≤35) | 24.9% | 16.6% |
+| Approval Rate — Senior (>35) | 25.7% | 25.7% |
+| **Disparate Impact** | **0.9696 ✅** | **0.6464 🚨** |
+| Approval Gap | 0.008 | 0.091 |
+| 80% Rule | PASS | **VIOLATION** |
 
-#### Income Segment (Low vs Medium)
+DI dropped **−0.32** after threshold tightening. The 80% threshold was crossed — fairness alert triggered.
 
-| Period | Low Approval | Medium Approval | DI     | Gap   | Status      |
-|--------|-------------|-----------------|--------|-------|-------------|
-| T0     | 25.6%       | 22.6%           | 1.136  | 0.031 | ✅ FAIR     |
-| T1     | 13.5%       | 20.6%           | 0.654  | 0.071 | 🚨 ALERT    |
-| T2     | 13.8%       | 23.7%           | 0.584  | 0.099 | 🚨 ALERT    |
-| T3     | 12.9%       | 22.5%           | 0.573  | 0.096 | 🚨 ALERT    |
+---
 
-> **Key finding:** The model is fair at deployment (T0). By T1, data drift causes DI to collapse below 0.80 for both age and income dimensions — with no model changes. This demonstrates that post-deployment monitoring is essential even for models that pass pre-deployment fairness checks.
+#### Time-Series — India Age Group (Young vs Middle)
+
+| Period | Young Approval | Middle Approval | DI    | Gap   | Status |
+|--------|---------------|-----------------|-------|-------|--------|
+| T0     | 22.3%         | 25.7%           | 0.867 | 0.034 | ⚠️ Baseline |
+| T1     | 12.1%         | 20.8%           | 0.582 | 0.087 | 🚨 ALERT |
+| T2     | 16.1%         | 25.0%           | 0.646 | 0.088 | 🚨 ALERT |
+| T3     | 14.0%         | 24.4%           | 0.575 | 0.104 | 🚨 ALERT |
+
+#### Time-Series — India Income Segment (Low vs Medium)
+
+| Period | Low (<40K) | Medium (40-80K) | DI    | Gap   | Status |
+|--------|-----------|-----------------|-------|-------|--------|
+| T0     | 25.6%     | 22.6%           | 1.136 | 0.031 | ✅ FAIR |
+| T1     | 13.5%     | 20.6%           | 0.654 | 0.071 | 🚨 ALERT |
+| T2     | 13.8%     | 23.7%           | 0.584 | 0.099 | 🚨 ALERT |
+| T3     | 12.9%     | 22.5%           | 0.573 | 0.096 | 🚨 ALERT |
+
+> India key finding: Income segment starts **fair at T0 (DI=1.136)** then collapses
+> to **0.573 by T3** — a drop of 0.56 — with zero model changes.
+
+---
+
+### 🇺🇸 USA — 50,000 Records (~12,500 per window)
+
+#### Time-Series — USA Age Group (Young vs Middle)
+
+| Period | Young Approval | Middle Approval | DI    | Gap   | Status |
+|--------|---------------|-----------------|-------|-------|--------|
+| T0     | 43.4%         | 73.1%           | 0.594 | 0.297 | 🚨 ALERT |
+| T1     | 27.6%         | 75.1%           | 0.368 | 0.475 | 🚨 ALERT |
+| T2     | 27.6%         | 73.5%           | 0.376 | 0.458 | 🚨 ALERT |
+| T3     | 28.2%         | 73.7%           | 0.383 | 0.455 | 🚨 ALERT |
+
+#### Time-Series — USA Income Segment (Low vs Medium)
+
+| Period | Low (<$40K) | Medium (40-80K) | DI    | Gap   | Status |
+|--------|------------|-----------------|-------|-------|--------|
+| T0     | 51.0%      | 59.5%           | 0.856 | 0.086 | ⚠️ WARNING |
+| T1     | 28.0%      | 60.8%           | 0.460 | 0.328 | 🚨 ALERT |
+| T2     | 27.8%      | 58.5%           | 0.475 | 0.307 | 🚨 ALERT |
+| T3     | 28.5%      | 59.5%           | 0.478 | 0.311 | 🚨 ALERT |
+
+#### Time-Series — USA Product Type (Credit Card vs Personal Loan)
+
+| Period | Credit Card | Personal Loan | DI    | Gap   | Status |
+|--------|------------|---------------|-------|-------|--------|
+| T0     | 62.1%      | 51.2%         | 1.212 | 0.109 | ✅ FAIR |
+| T1     | 48.2%      | 50.6%         | 0.953 | 0.024 | ✅ OK  |
+| T2     | 47.1%      | 50.6%         | 0.930 | 0.035 | ✅ OK  |
+| T3     | 47.0%      | 51.4%         | 0.914 | 0.044 | ✅ OK  |
+
+> Product type remains fair across all periods — a useful control result showing
+> DriftSafe correctly distinguishes drifting from stable attributes.
+
+#### Time-Series — USA Credit Score Group (Low vs Medium)
+
+| Period | Low (300-600) | Medium (601-700) | DI    | Gap   | Status |
+|--------|--------------|------------------|-------|-------|--------|
+| T0     | 13.4%        | 64.9%            | 0.206 | 0.515 | 🚨 ALERT |
+| T1     | 7.4%         | 64.9%            | 0.113 | 0.575 | 🚨 ALERT |
+| T2     | 7.1%         | 64.3%            | 0.110 | 0.573 | 🚨 ALERT |
+| T3     | 5.9%         | 65.2%            | 0.090 | 0.593 | 🚨 ALERT |
+
+---
+
+### Cross-Region Summary
+
+| Attribute | India DI (T0→T3) | USA DI (T0→T3) | Verdict |
+|-----------|-----------------|----------------|---------|
+| Age Group | 0.867 → 0.575 | 0.594 → 0.383 | 🚨 Worsens in both |
+| Income Segment | 1.136 → 0.573 | 0.856 → 0.478 | 🚨 Worsens in both |
+| Product Type | — | 1.212 → 0.914 | ✅ Stable |
+| Credit Score | — | 0.206 → 0.090 | 🚨 Severe in USA |
 
 ---
 
 ## ▶️ How to Run
 
 ```bash
-pip install pandas numpy scikit-learn flask
+pip install pandas numpy scikit-learn flask openpyxl
 
-# Quick standalone fairness test (no server needed)
+# Instant fairness check (India, no server)
 python bias_quick_test.py
 
-# Full time-series pipeline (India dataset)
+# Full India time-series pipeline
 python india.py
 
-# Launch Flask dashboard
+# Full USA time-series pipeline
+python usa_model.py
+
+# Launch Flask dashboard (both regions)
 python app.py
 # Visit: http://localhost:5000
 ```
@@ -110,36 +190,26 @@ python app.py
 
 ```
 driftsafe/
-├── app.py                   # Flask backend (routes for India + USA dashboards)
-├── india.py                 # Full fairness monitoring pipeline (4 attributes × 4 time windows)
-├── usa_model.py             # USA loan fairness model
-├── bias_quick_test.py       # Standalone quick evaluation script
+├── app.py                        # Flask backend — /india and /api/usa routes
+├── india.py                      # India pipeline (4 attributes × 4 windows)
+├── usa_model.py                  # USA pipeline + get_fairness_metrics() Flask API
+├── bias_quick_test.py            # Standalone quick eval (no server needed)
 ├── templates/
-│   ├── dashboard.html       # Landing page with country selector
-│   ├── india.html           # India fairness dashboard
-│   └── usa.html             # USA fairness dashboard
+│   ├── dashboard.html            # Landing page — country selector
+│   ├── india.html                # India fairness dashboard
+│   └── usa.html                  # USA fairness dashboard
 └── data/
-    ├── IndianData_final.csv
-    └── Dated_Loan_Approval_Data.xlsx
+    ├── IndianData_final.csv      # 4,269 Indian loan applications (2018–2024)
+    └── Dated_Loan_Approval_Data.xlsx  # 50,000 US loan applications (2015–2025)
 ```
-
----
-
-## 🔬 Fairness Metrics Explained
-
-| Metric | Formula | Threshold | Meaning |
-|--------|---------|-----------|---------|
-| Disparate Impact | P(approval\|unprivileged) / P(approval\|privileged) | ≥ 0.80 (80% rule) | Core fairness signal |
-| Approval Gap | \|rate_protected − rate_reference\| | < 0.10 | Absolute disparity |
-
-The **80% rule** (EEOC guidelines) is the industry-standard threshold: a DI below 0.80 indicates the disadvantaged group receives favorable outcomes at less than 80% the rate of the advantaged group.
 
 ---
 
 ## 🔮 Future Work
 
-- [ ] Statistical significance testing (bootstrap CI on DI estimates)
+- [ ] Statistical significance testing (bootstrap confidence intervals on DI)
 - [ ] Counterfactual fairness analysis
 - [ ] Automated retraining triggers when DI falls below threshold
-- [ ] Support for additional fairness metrics (Equalized Odds, Calibration)
-- [ ] Real-time streaming data ingestion
+- [ ] Additional metrics: Equalized Odds, Calibration, Predictive Parity
+- [ ] Real-time streaming ingestion for live deployment monitoring
+- [ ] Export fairness reports to PDF
