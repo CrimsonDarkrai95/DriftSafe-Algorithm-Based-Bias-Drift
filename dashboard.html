@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>DriftSafe Dashboard</title>
+
+<style>
+:root {
+    --bg: #ffffff;
+    --panel: #f8f9fa;
+    --card: #ffffff;
+    --border: #e9ecef;
+    --text: #212529;
+    --muted: #6c757d;
+    --accent: #007bff;
+    --hover: #0056b3;
+    --shadow: rgba(0, 0, 0, 0.1);
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: "Helvetica Neue", Arial, sans-serif;
+    line-height: 1.6;
+    min-height: 100vh;
+}
+
+/* ===== CONTAINER ===== */
+.container {
+    max-width: 1200px;
+    margin: auto;
+    padding: 40px 20px;
+}
+
+/* ===== HEADER ===== */
+.header {
+    text-align: center;
+    margin-bottom: 40px;
+}
+
+.header h1 {
+    font-size: 36px;
+    font-weight: 300;
+    margin-bottom: 15px;
+    color: var(--accent);
+}
+
+.header p {
+    font-size: 16px;
+    color: var(--muted);
+    line-height: 1.7;
+    max-width: 800px;
+    margin: auto;
+}
+
+/* ===== MAIN SECTION ===== */
+.main-section {
+    display: flex;
+    gap: 20px;
+    align-items: flex-start;
+    margin-bottom: 40px;
+}
+
+.visual {
+    flex: 1;
+    border-radius: 8px;
+    overflow: hidden;
+    border: 1px solid var(--border);
+    box-shadow: 0 2px 8px var(--shadow);
+}
+
+.visual img {
+    width: 100%;
+    display: block;
+}
+
+.content {
+    flex: 1;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 30px;
+    box-shadow: 0 2px 8px var(--shadow);
+    display: flex;
+    flex-direction: column;
+    
+}
+
+/* ===== TEXT ===== */
+.content h2 {
+    font-size: 24px;
+    font-weight: 600;
+    margin-bottom: 15px;
+    color: var(--text);
+}
+
+.content p {
+    font-size: 14px;
+    color: var(--muted);
+    line-height: 1.7;
+    margin-bottom: 20px;
+}
+
+/* ===== DROPDOWN ===== */
+select {
+    width: 100%;
+    padding: 12px 16px;
+    font-size: 14px;
+    font-family: "Helvetica Neue", Arial, sans-serif;
+    border-radius: 4px;
+    background: var(--bg);
+    color: var(--text);
+    border: 1px solid var(--border);
+    outline: none;
+    cursor: pointer;
+    transition: border-color 0.3s ease;
+}
+
+.selector-block {
+    margin-top: auto;
+    margin-bottom: auto;
+}
+
+
+select:hover {
+    border-color: var(--accent);
+}
+
+select:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+}
+
+/* ===== FOOT NOTE ===== */
+.note {
+    margin-top: 20px;
+    font-size: 12px;
+    color: var(--muted);
+}
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 768px) {
+    .container {
+        padding: 20px 10px;
+    }
+
+    .header h1 {
+        font-size: 28px;
+    }
+
+    .main-section {
+        flex-direction: column;
+        gap: 20px;
+    }
+
+    .content {
+        padding: 20px;
+    }
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+    <!-- HEADER -->
+    <div class="header">
+        <h1>DriftSafe Monitoring Dashboard</h1>
+        <p>
+            This dashboard provides a structured view of how algorithmic fairness
+            evolves after deployment. By comparing regions, DriftSafe helps uncover
+            bias introduced through real-world data drift.
+        </p>
+    </div>
+
+    <!-- MAIN SECTION -->
+    <div class="main-section">
+        <!-- VISUAL -->
+        <div class="visual">
+            <img src="modern-business-building-scenery-touching-sky_181624-5785.avif" alt="Modern business skyline representing financial systems">
+
+        </div>
+
+        <!-- CONTENT -->
+        <div class="content">
+            <h2>Regional Fairness Analysis</h2>
+            <p>
+                Lending models often behave differently across countries due to
+                economic conditions, demographic composition, and regulatory frameworks.
+                DriftSafe allows you to inspect post-deployment fairness metrics
+                independently for each region.
+            </p>
+
+            <p>
+                Select a country below to explore approval rate trends, disparate impact
+                signals, and emerging bias patterns detected over time.
+            </p>
+
+            <select onchange="goToCountry(this.value)">
+                <option value="">Select Country</option>
+                <option value="india.html">🇮🇳 India</option>
+                <option value="usa.html">🇺🇸 USA</option>
+            </select>
+
+            <div class="note">
+                You will be redirected to a country-specific monitoring view.
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<script>
+function goToCountry(page) {
+    if (!page) return;
+    window.location.href = page;
+}
+</script>
+
+</body>
+</html>

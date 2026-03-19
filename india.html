@@ -1,0 +1,648 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>DriftSafe | India Fairness Dashboard</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+
+<style>
+:root {
+    --bg: #ffffff;
+    --panel: #f8f9fa;
+    --card: #ffffff;
+    --border: #e9ecef;
+    --text: #212529;
+    --muted: #6c757d;
+    --accent: #007bff;
+    --hover: #0056b3;
+    --shadow: rgba(0, 0, 0, 0.1);
+    --green: #28a745;
+    --amber: #ffc107;
+    --red: #dc3545;
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    background: var(--bg);
+    font-family: "Helvetica Neue", Arial, sans-serif;
+    color: var(--text);
+    line-height: 1.6;
+    min-height: 100vh;
+}
+
+/* ================= HEADER ================= */
+.header {
+    height: 70px;
+    padding: 0 40px;
+    background: var(--bg);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    box-shadow: 0 2px 4px var(--shadow);
+}
+
+.logo {
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--accent);
+}
+
+.status {
+    color: var(--green);
+    font-size: 14px;
+}
+
+/* ================= MAIN ================= */
+.container {
+    max-width: 1200px;
+    margin: auto;
+    padding: 40px 20px;
+}
+
+/* ================= HERO ================= */
+.hero h1 {
+    font-size: 36px;
+    font-weight: 300;
+    color: var(--accent);
+    margin-bottom: 10px;
+}
+
+.hero p {
+    color: var(--muted);
+    font-size: 16px;
+    max-width: 900px;
+    line-height: 1.6;
+}
+
+/* ================= OVERVIEW ================= */
+.overview {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 20px;
+    margin: 40px 0;
+}
+
+.tile {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 20px;
+    box-shadow: 0 2px 8px var(--shadow);
+}
+
+.tile h3 {
+    font-size: 14px;
+    color: var(--muted);
+    margin-bottom: 10px;
+}
+
+.tile span {
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--text);
+}
+
+/* ================= DROPDOWN ================= */
+.selector {
+    margin: 40px 0;
+}
+
+label {
+    display: block;
+    margin-bottom: 10px;
+    font-size: 14px;
+    color: var(--muted);
+}
+
+select {
+    width: 100%;
+    max-width: 420px;
+    padding: 12px 16px;
+    background: var(--bg);
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    font-size: 14px;
+    outline: none;
+    cursor: pointer;
+    transition: border-color 0.3s ease;
+}
+
+select:hover {
+    border-color: var(--accent);
+}
+
+select:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+}
+
+/* ================= METRICS ================= */
+.metrics {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 20px;
+    margin-top: 40px;
+}
+
+.metric {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 20px;
+    box-shadow: 0 2px 8px var(--shadow);
+}
+
+.metric h4 {
+    font-size: 14px;
+    color: var(--muted);
+    margin-bottom: 8px;
+}
+
+.metric span {
+    font-size: 28px;
+    font-weight: 700;
+}
+
+.good { color: var(--green); }
+.warn { color: var(--amber); }
+.bad  { color: var(--red); }
+
+/* ================= CHARTS ================= */
+.charts-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+    gap: 20px;
+    margin-top: 40px;
+}
+
+.chart-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 24px;
+    box-shadow: 0 2px 8px var(--shadow);
+}
+
+.chart-card h3 {
+    font-size: 16px;
+    color: var(--text);
+    margin-bottom: 20px;
+    font-weight: 600;
+}
+
+.chart-wrapper {
+    position: relative;
+    height: 300px;
+}
+
+/* ================= REASONING ================= */
+.reasoning {
+    margin-top: 40px;
+    background: var(--card);
+    border-left: 4px solid var(--accent);
+    border-radius: 8px;
+    padding: 20px;
+    box-shadow: 0 2px 8px var(--shadow);
+}
+
+.reasoning h3 {
+    margin-bottom: 15px;
+    color: var(--accent);
+    font-size: 18px;
+    font-weight: 600;
+}
+
+.reasoning p {
+    color: var(--muted);
+    font-size: 14px;
+    line-height: 1.6;
+}
+
+/* ================= FOOTER ================= */
+.footer {
+    margin-top: 60px;
+    padding: 20px;
+    text-align: center;
+    color: var(--muted);
+    border-top: 1px solid var(--border);
+    font-size: 12px;
+}
+
+/* ================= RESPONSIVE ================= */
+@media (max-width: 768px) {
+    .header {
+        padding: 0 20px;
+        height: 60px;
+    }
+
+    .container {
+        padding: 20px 10px;
+    }
+
+    .hero h1 {
+        font-size: 28px;
+    }
+
+    .overview {
+        grid-template-columns: 1fr;
+        gap: 15px;
+    }
+
+    .metrics {
+        grid-template-columns: 1fr;
+        gap: 15px;
+    }
+
+    .charts-container {
+        grid-template-columns: 1fr;
+        gap: 15px;
+    }
+
+    .tile, .metric, .chart-card {
+        padding: 15px;
+    }
+
+    .chart-wrapper {
+        height: 250px;
+    }
+}
+</style>
+</head>
+
+<body>
+
+<div class="header">
+    <div class="logo">DriftSafe</div>
+    <div class="status">India Deployment • Monitoring Active</div>
+</div>
+
+<div class="container">
+
+    <div class="hero">
+        <h1>India Fairness Monitoring</h1>
+        <p>
+            Analyze post-deployment fairness degradation across sensitive dimensions
+            for the Indian loan approval system. The decision model remains frozen;
+            observed disparities emerge solely due to real-world data drift.
+        </p>
+    </div>
+
+    <!-- OVERVIEW -->
+    <div class="overview">
+        <div class="tile">
+            <h3>Model Status</h3>
+            <span>Frozen (T0)</span>
+        </div>
+        <div class="tile">
+            <h3>Monitoring Window</h3>
+            <span>T0 → T3</span>
+        </div>
+        <div class="tile">
+            <h3>Deployment Region</h3>
+            <span>India</span>
+        </div>
+    </div>
+
+    <!-- DROPDOWN -->
+    <div class="selector">
+        <label>Fairness Dimension</label>
+        <select onchange="updateDashboard(this.value)">
+            <option value="age_group">Age Group</option>
+            <option value="income_segment">Income Segment</option>
+            <option value="product_type">Product Type</option>
+            <option value="credit_score_group">Credit Score Group</option>
+        </select>
+    </div>
+
+    <!-- METRICS -->
+    <div class="metrics">
+        <div class="metric">
+            <h4>Approval Rate</h4>
+            <span id="approval" class="warn">0.68</span>
+        </div>
+        <div class="metric">
+            <h4>Approval Rate Gap</h4>
+            <span id="gap" class="bad">0.22</span>
+        </div>
+        <div class="metric">
+            <h4>Disparate Impact</h4>
+            <span id="impact" class="bad">0.71</span>
+        </div>
+    </div>
+
+    <!-- CHARTS -->
+    <div class="charts-container">
+        <div class="chart-card">
+            <h3>Fairness Metrics Over Time</h3>
+            <div class="chart-wrapper">
+                <canvas id="timelineChart"></canvas>
+            </div>
+        </div>
+        <div class="chart-card">
+            <h3>Group-wise Approval Rates (T3)</h3>
+            <div class="chart-wrapper">
+                <canvas id="groupChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- REASONING -->
+    <div class="reasoning">
+        <h3>Why This Changed</h3>
+        <p id="reason">
+            Younger applicants (18-25) experienced increasing rejection rates post-deployment as rising debt burdens, student loans, and income instability disproportionately affected their creditworthiness. Economic shifts favored older, established borrowers.
+        </p>
+    </div>
+
+</div>
+
+<div class="footer">
+    DriftSafe — Algorithmic Bias Drift & Fairness Monitoring
+</div>
+
+<script>
+let timelineChart = null;
+let groupChart = null;
+
+// Fake data generator for different dimensions
+const fakeData = {
+    age_group: {
+        results: [
+            { period: "T0", overall_approval: 0.78, approval_gap: 0.08, disparate_impact: 0.89 },
+            { period: "T1", overall_approval: 0.74, approval_gap: 0.12, disparate_impact: 0.83 },
+            { period: "T2", overall_approval: 0.70, approval_gap: 0.16, disparate_impact: 0.77 },
+            { period: "T3", overall_approval: 0.68, approval_gap: 0.22, disparate_impact: 0.71 }
+        ],
+        t3: {
+            overall_approval: 0.68,
+            approval_gap: 0.22,
+            disparate_impact: 0.71,
+            group_approval_rates: {
+                "18-25": 0.52,
+                "26-35": 0.68,
+                "36-45": 0.75,
+                "46-60": 0.79,
+                "60+": 0.74
+            }
+        },
+        reasoning: "Younger applicants (18-25) experienced increasing rejection rates post-deployment as rising debt burdens, student loans, and income instability disproportionately affected their creditworthiness. Economic shifts favored older, established borrowers."
+    },
+    income_segment: {
+        results: [
+            { period: "T0", overall_approval: 0.76, approval_gap: 0.14, disparate_impact: 0.82 },
+            { period: "T1", overall_approval: 0.72, approval_gap: 0.19, disparate_impact: 0.75 },
+            { period: "T2", overall_approval: 0.69, approval_gap: 0.24, disparate_impact: 0.69 },
+            { period: "T3", overall_approval: 0.65, approval_gap: 0.31, disparate_impact: 0.63 }
+        ],
+        t3: {
+            overall_approval: 0.65,
+            approval_gap: 0.31,
+            disparate_impact: 0.63,
+            group_approval_rates: {
+                "Low (< ₹3L)": 0.45,
+                "Lower-Mid (₹3-6L)": 0.58,
+                "Mid (₹6-12L)": 0.71,
+                "Upper-Mid (₹12-20L)": 0.82,
+                "High (> ₹20L)": 0.89
+            }
+        },
+        reasoning: "Low-income segments faced severe drift as inflation and cost-of-living increases reduced their debt-to-income ratios. The frozen model, trained on pre-inflation data, couldn't adapt to new economic realities affecting lower-income applicants."
+    },
+    product_type: {
+        results: [
+            { period: "T0", overall_approval: 0.81, approval_gap: 0.11, disparate_impact: 0.86 },
+            { period: "T1", overall_approval: 0.77, approval_gap: 0.15, disparate_impact: 0.81 },
+            { period: "T2", overall_approval: 0.74, approval_gap: 0.18, disparate_impact: 0.76 },
+            { period: "T3", overall_approval: 0.71, approval_gap: 0.23, disparate_impact: 0.72 }
+        ],
+        t3: {
+            overall_approval: 0.71,
+            approval_gap: 0.23,
+            disparate_impact: 0.72,
+            group_approval_rates: {
+                "Personal Loan": 0.59,
+                "Home Loan": 0.78,
+                "Auto Loan": 0.73,
+                "Business Loan": 0.65,
+                "Education Loan": 0.54
+            }
+        },
+        reasoning: "Personal and education loans showed increasing bias as pandemic economic shifts made these categories riskier. Home loan applicants benefited from stable property values, while personal loan seekers faced higher scrutiny due to changing employment patterns."
+    },
+    credit_score_group: {
+        results: [
+            { period: "T0", overall_approval: 0.79, approval_gap: 0.10, disparate_impact: 0.87 },
+            { period: "T1", overall_approval: 0.76, approval_gap: 0.13, disparate_impact: 0.83 },
+            { period: "T2", overall_approval: 0.72, approval_gap: 0.17, disparate_impact: 0.78 },
+            { period: "T3", overall_approval: 0.69, approval_gap: 0.25, disparate_impact: 0.70 }
+        ],
+        t3: {
+            overall_approval: 0.69,
+            approval_gap: 0.25,
+            disparate_impact: 0.70,
+            group_approval_rates: {
+                "Poor (300-579)": 0.38,
+                "Fair (580-669)": 0.55,
+                "Good (670-739)": 0.72,
+                "Very Good (740-799)": 0.84,
+                "Excellent (800-850)": 0.91
+            }
+        },
+        reasoning: "Lower credit score groups experienced accelerated drift as economic volatility increased defaults in these segments. The model's risk assessment became increasingly conservative for fair and poor credit scores, widening the gap with excellent credit borrowers."
+    }
+};
+
+function updateDashboard(dimension) {
+    // Use fake data instead of API call
+    const data = fakeData[dimension];
+    
+    if (!data) {
+        console.error("No data for dimension:", dimension);
+        return;
+    }
+
+    const t3 = data.t3;
+
+    // Update metric cards
+    document.getElementById("approval").textContent = t3.overall_approval.toFixed(2);
+    document.getElementById("gap").textContent = t3.approval_gap.toFixed(2);
+    document.getElementById("impact").textContent = t3.disparate_impact.toFixed(2);
+
+    // Update color classes
+    const approvalEl = document.getElementById("approval");
+    const gapEl = document.getElementById("gap");
+    const impactEl = document.getElementById("impact");
+
+    approvalEl.className = t3.overall_approval >= 0.75 ? 'good' : (t3.overall_approval >= 0.6 ? 'warn' : 'bad');
+    gapEl.className = t3.approval_gap <= 0.1 ? 'good' : (t3.approval_gap <= 0.2 ? 'warn' : 'bad');
+    impactEl.className = t3.disparate_impact >= 0.8 ? 'good' : (t3.disparate_impact >= 0.6 ? 'warn' : 'bad');
+
+    // Update reasoning
+    document.getElementById("reason").textContent = data.reasoning;
+
+    // Update charts
+    updateTimelineChart(data.results);
+    updateGroupChart(t3);
+}
+
+function updateTimelineChart(results) {
+    const ctx = document.getElementById('timelineChart').getContext('2d');
+    
+    // Extract data for timeline
+    const periods = results.map(r => r.period);
+    const approvalRates = results.map(r => r.overall_approval);
+    const gaps = results.map(r => r.approval_gap);
+    const disparateImpacts = results.map(r => r.disparate_impact);
+
+    // Destroy existing chart if it exists
+    if (timelineChart) {
+        timelineChart.destroy();
+    }
+
+    timelineChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: periods,
+            datasets: [
+                {
+                    label: 'Approval Rate',
+                    data: approvalRates,
+                    borderColor: '#007bff',
+                    backgroundColor: 'rgba(0, 123, 255, 0.1)',
+                    borderWidth: 2,
+                    tension: 0.3,
+                    fill: true
+                },
+                {
+                    label: 'Approval Gap',
+                    data: gaps,
+                    borderColor: '#dc3545',
+                    backgroundColor: 'rgba(220, 53, 69, 0.1)',
+                    borderWidth: 2,
+                    tension: 0.3,
+                    fill: true
+                },
+                {
+                    label: 'Disparate Impact',
+                    data: disparateImpacts,
+                    borderColor: '#ffc107',
+                    backgroundColor: 'rgba(255, 193, 7, 0.1)',
+                    borderWidth: 2,
+                    tension: 0.3,
+                    fill: true
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'top',
+                },
+                tooltip: {
+                    mode: 'index',
+                    intersect: false,
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    max: 1,
+                    ticks: {
+                        callback: function(value) {
+                            return value.toFixed(2);
+                        }
+                    }
+                }
+            }
+        }
+    });
+}
+
+function updateGroupChart(t3Data) {
+    const ctx = document.getElementById('groupChart').getContext('2d');
+    
+    // Extract group data
+    const groups = Object.keys(t3Data.group_approval_rates || {});
+    const approvalRates = Object.values(t3Data.group_approval_rates || {});
+
+    // Destroy existing chart if it exists
+    if (groupChart) {
+        groupChart.destroy();
+    }
+
+    // Create colors based on approval rates
+    const backgroundColors = approvalRates.map(rate => {
+        if (rate >= 0.75) return 'rgba(40, 167, 69, 0.7)';
+        if (rate >= 0.6) return 'rgba(255, 193, 7, 0.7)';
+        return 'rgba(220, 53, 69, 0.7)';
+    });
+
+    const borderColors = approvalRates.map(rate => {
+        if (rate >= 0.75) return 'rgba(40, 167, 69, 1)';
+        if (rate >= 0.6) return 'rgba(255, 193, 7, 1)';
+        return 'rgba(220, 53, 69, 1)';
+    });
+
+    groupChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: groups,
+            datasets: [{
+                label: 'Approval Rate',
+                data: approvalRates,
+                backgroundColor: backgroundColors,
+                borderColor: borderColors,
+                borderWidth: 2
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            return 'Approval Rate: ' + context.parsed.y.toFixed(3);
+                        }
+                    }
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    max: 1,
+                    ticks: {
+                        callback: function(value) {
+                            return value.toFixed(2);
+                        }
+                    }
+                },
+                x: {
+                    ticks: {
+                        maxRotation: 45,
+                        minRotation: 45
+                    }
+                }
+            }
+        }
+    });
+}
+
+window.onload = () => updateDashboard("age_group");
+</script>
+
+</body>
+</html>
